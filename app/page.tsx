@@ -1,39 +1,18 @@
-const photographers = [
-  {
-    name: "New photographer",
-    location: "Aotearoa",
-    tags: ["street", "documentary", "urban"],
-    description: "Discovery feed ready for the first live sources.",
-    instagram: null,
-    status: "awaiting discovery"
-  },
-  {
-    name: "New photographer",
-    location: "Australia",
-    tags: ["film", "nightlife", "portrait"],
-    description: "Profiles will be added from public portfolio and directory sources.",
-    instagram: null,
-    status: "awaiting discovery"
-  },
-  {
-    name: "New photographer",
-    location: "International",
-    tags: ["editorial", "subculture", "candid"],
-    description: "Saved profiles, filters and daily discovery are the next data layer.",
-    instagram: null,
-    status: "awaiting discovery"
-  }
-];
+import PhotographerIndex from "@/components/PhotographerIndex";
+import { getPhotographers } from "@/lib/photographers";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const photographers = await getPhotographers();
+
   return (
     <main className="shell">
       <header className="header">
         <a className="wordmark" href="/">LOWKEYVANDALS</a>
         <nav className="nav" aria-label="Main navigation">
           <a href="#discover">Discover</a>
-          <a href="#saved">Saved</a>
-          <a href="#all">All</a>
+          <a href="#about">About</a>
         </nav>
       </header>
 
@@ -41,61 +20,26 @@ export default function Home() {
         <p className="eyebrow">Photographer discovery</p>
         <h1>Interesting photographers, quietly collected.</h1>
         <p className="sub">
-          A simple daily index of street, urban, candid, documentary, film,
-          nightlife and subculture photography.
+          A daily index for Sarah: street, urban, film, candid, documentary,
+          editorial, nightlife and subculture photography — with direct links
+          to the people behind the work.
         </p>
       </section>
 
       <section id="discover">
-        <div className="sectionTitle">
-          <div>
-            <p className="eyebrow">Discover</p>
-            <h2>New today</h2>
-          </div>
-          <p className="count">Discovery engine ready</p>
-        </div>
-
-        <div className="toolbar" aria-label="Filters">
-          <button type="button">Location</button>
-          <button type="button">Style</button>
-          <button type="button">Newest</button>
-        </div>
-
-        <div className="grid">
-          {photographers.map((photographer, index) => (
-            <article className="card" key={index}>
-              <div className="imagePlaceholder" aria-hidden="true">
-                <span>{String(index + 1).padStart(2, "0")}</span>
-              </div>
-
-              <div className="cardBody">
-                <div className="meta">
-                  <span>{photographer.location}</span>
-                  <span>{photographer.status}</span>
-                </div>
-
-                <h3>{photographer.name}</h3>
-                <p className="description">{photographer.description}</p>
-
-                <div className="tags">
-                  {photographer.tags.map((tag) => (
-                    <span key={tag}>{tag}</span>
-                  ))}
-                </div>
-
-                <div className="actions">
-                  <button type="button" disabled>Instagram</button>
-                  <button type="button">Save</button>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
+        <PhotographerIndex photographers={photographers} />
       </section>
 
-      <footer>
-        LOWKEYVANDALS — photographer discovery index
-      </footer>
+      <section className="about" id="about">
+        <p className="eyebrow">About</p>
+        <p>
+          LOWKEYVANDALS collects public photographer profiles from portfolio
+          sites, directories and photography communities. Instagram is treated
+          as a destination link rather than scraped as a private data source.
+        </p>
+      </section>
+
+      <footer>LOWKEYVANDALS — quiet photographer discovery.</footer>
     </main>
   );
 }
