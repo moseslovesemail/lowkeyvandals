@@ -17,6 +17,8 @@ type Candidate = {
   tags: string[];
 };
 
+type CandidateResult = "added" | "updated" | "existing";
+
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -75,17 +77,68 @@ async function fetchHtml(url: string) {
   return response.text();
 }
 
-async function addCandidate(candidate: Candidate) {
+async function addCandidate(candidate: Candidate): Promise<CandidateResult> {
   const slug = slugify(candidate.name);
+  const location = candidate.city
+    ? `${candidate.city}, ${candidate.country}`
+    : candidate.country;
 
-  const exists = await db.query(
+  const sameHandle = await db.query(
     `SELECT id FROM photographers
-     WHERE slug = $1 OR LOWER(instagram_handle) = LOWER($2)
+     WHERE LOWER(instagram_handle) = LOWER($1)
      LIMIT 1`,
-    [slug, candidate.instagramHandle]
+    [candidate.instagramHandle]
   );
 
-  if (exists.rowCount) return false;
+  if (sameHandle.rowCount) return "existing";
+
+  const sameSlug = await db.query(
+    `SELECT id, source_name FROM photographers
+     WHERE slug = $1
+     LIMIT 1`,
+    [slug]
+  );
+
+  if (sameSlug.rowCount) {
+    const existing = sameSlug.rows[0];
+
+    if (existing.source_name === candidate.sourceName) {
+      await db.query(
+        `UPDATE photographers
+         SET name = $1,
+             city = $2,
+             country = $3,
+             location = $4,
+             description = $5,
+             instagram_handle = $6,
+             instagram_url = $7,
+             website_url = COALESCE($8, website_url),
+             source_url = $9,
+             source_name = $10,
+             tags = $11,
+             updated_at = NOW()
+         WHERE id = $12`,
+        [
+          candidate.name,
+          candidate.city,
+          candidate.country,
+          location,
+          candidate.description,
+          candidate.instagramHandle,
+          candidate.instagramUrl,
+          candidate.websiteUrl,
+          candidate.sourceUrl,
+          candidate.sourceName,
+          candidate.tags,
+          existing.id,
+        ]
+      );
+
+      return "updated";
+    }
+
+    return "existing";
+  }
 
   await db.query(
     `INSERT INTO photographers
@@ -97,7 +150,7 @@ async function addCandidate(candidate: Candidate) {
       candidate.name,
       candidate.city,
       candidate.country,
-      candidate.city ? `${candidate.city}, ${candidate.country}` : candidate.country,
+      location,
       candidate.description,
       candidate.instagramHandle,
       candidate.instagramUrl,
@@ -108,7 +161,7 @@ async function addCandidate(candidate: Candidate) {
     ]
   );
 
-  return true;
+  return "added";
 }
 
 export async function discoverFromAASPI() {
@@ -144,6 +197,7 @@ export async function discoverFromAASPI() {
 
   let checked = 0;
   let added = 0;
+  let updated = 0;
 
   for (const url of Array.from(links).slice(0, 50)) {
     try {
@@ -160,7 +214,7 @@ export async function discoverFromAASPI() {
       const handle = `@${instagramMatch[1]}`;
       const city = inferCity(text, "Australia");
 
-      const wasAdded = await addCandidate({
+      const result = await addCandidate({
         name,
         city,
         country: "Australia",
@@ -174,11 +228,12 @@ export async function discoverFromAASPI() {
         tags: styleTags(text, ["street", "urban", "candid"]),
       });
 
-      if (wasAdded) added += 1;
+      if (result === "added") added += 1;
+      if (result === "updated") updated += 1;
     } catch {}
   }
 
-  return { source: "AASPI", checked, added };
+  return { source: "AASPI", checked, added, updated };
 }
 
 function nameFromSplendid(page: cheerio.CheerioAPI, text: string) {
@@ -193,6 +248,34 @@ function nameFromSplendid(page: cheerio.CheerioAPI, text: string) {
   title = title.replace(/^Photog(?:rapher)? of the Month\s*(?:\([^)]*\))?\s*[-–—]?\s*/i, "");
   title = title.replace(/\s*\((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[^)]*\)\s*$/i, "");
   return title.trim();
+}
+
+function splendidInstagram(page: cheerio.CheerioAPI, pageUrl: string) {
+  const article = page(".article-page__content");
+  let result: { handle: string; url: string } | null = null;
+
+  article.find('a[href*="instagram.com/"]').each((_, element) => {
+    if (result) return;
+
+    const href = page(element).attr("href");
+    if (!href) return;
+
+    try {
+      const parsed = new URL(href, pageUrl);
+      const parts = parsed.pathname.split("/").filter(Boolean);
+      const username = parts[0];
+
+      if (!username || username.toLowerCase() === "splendid.nz") return;
+      if (!/^[A-Za-z0-9._]+$/.test(username)) return;
+
+      result = {
+        handle: `@${username}`,
+        url: `https://www.instagram.com/${username}/`,
+      };
+    } catch {}
+  });
+
+  return result;
 }
 
 export async function discoverFromSplendid() {
@@ -215,41 +298,43 @@ export async function discoverFromSplendid() {
 
   let checked = 0;
   let added = 0;
+  let updated = 0;
 
   for (const url of Array.from(links).slice(0, 45)) {
     try {
       const html = await fetchHtml(url);
       const page = cheerio.load(html);
-      const text = page("body").text().replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
-      const instagramMatch = text.match(/Instagram\s*(?:handle)?\s*:\s*@([A-Za-z0-9._]+)/i);
-      if (!instagramMatch) continue;
+      const article = page(".article-page__content");
+      const text = article.text().replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
+      const instagram = splendidInstagram(page, url);
+      if (!instagram) continue;
 
       const name = nameFromSplendid(page, text);
       if (!name || name.length > 120) continue;
 
       checked += 1;
       const city = inferCity(text, "New Zealand");
-      const handle = `@${instagramMatch[1]}`;
 
-      const wasAdded = await addCandidate({
+      const result = await addCandidate({
         name,
         city,
         country: "New Zealand",
         description:
           "Analogue photographer discovered through Splendid Photo's New Zealand photographer archive.",
-        instagramHandle: handle,
-        instagramUrl: `https://www.instagram.com/${instagramMatch[1]}/`,
+        instagramHandle: instagram.handle,
+        instagramUrl: instagram.url,
         websiteUrl: null,
         sourceUrl: url,
         sourceName: "Splendid Photo",
         tags: styleTags(text, ["film", "analogue"]),
       });
 
-      if (wasAdded) added += 1;
+      if (result === "added") added += 1;
+      if (result === "updated") updated += 1;
     } catch {}
   }
 
-  return { source: "Splendid Photo", checked, added };
+  return { source: "Splendid Photo", checked, added, updated };
 }
 
 export async function runDiscovery() {
@@ -262,6 +347,7 @@ export async function runDiscovery() {
       source: "Splendid Photo",
       checked: 0,
       added: 0,
+      updated: 0,
       error: error instanceof Error ? error.message : "Source failed",
     });
   }
@@ -273,6 +359,7 @@ export async function runDiscovery() {
       source: "AASPI",
       checked: 0,
       added: 0,
+      updated: 0,
       error: error instanceof Error ? error.message : "Source failed",
     });
   }
@@ -281,5 +368,6 @@ export async function runDiscovery() {
     sources: results,
     checked: results.reduce((sum, result) => sum + result.checked, 0),
     added: results.reduce((sum, result) => sum + result.added, 0),
+    updated: results.reduce((sum, result) => sum + result.updated, 0),
   };
 }
