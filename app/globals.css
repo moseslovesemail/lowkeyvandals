@@ -1,0 +1,274 @@
+:root {
+  --black: #080808;
+  --white: #ffffff;
+  --line: #dddddd;
+  --muted: #656565;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--white);
+}
+
+body {
+  margin: 0;
+  background: var(--white);
+  color: var(--black);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  appearance: none;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  color: #a0a0a0;
+  cursor: default;
+}
+
+.shell {
+  width: min(1220px, calc(100% - 64px));
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.wordmark {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.nav {
+  display: flex;
+  gap: 30px;
+  font-size: 16px;
+}
+
+.intro {
+  padding: 96px 0 84px;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+}
+
+h1 {
+  max-width: 850px;
+  margin: 0;
+  font-size: clamp(46px, 6vw, 72px);
+  font-weight: 400;
+  line-height: 1.03;
+  letter-spacing: -0.045em;
+}
+
+.sub {
+  max-width: 620px;
+  margin: 26px 0 0;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  padding: 26px 0;
+  border-top: 1px solid var(--line);
+}
+
+.sectionTitle h2 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+}
+
+.count {
+  margin: 0;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 18px;
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.toolbar button {
+  min-height: 42px;
+  font-size: 16px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-left: 1px solid var(--line);
+}
+
+.card {
+  min-width: 0;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.imagePlaceholder {
+  aspect-ratio: 4 / 5;
+  display: flex;
+  align-items: flex-end;
+  padding: 20px;
+  background:
+    linear-gradient(140deg, #efefef 0%, #f8f8f8 48%, #e9e9e9 100%);
+  border-bottom: 1px solid var(--line);
+  color: #777;
+  font-size: 16px;
+}
+
+.cardBody {
+  padding: 24px;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.card h3 {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.description {
+  min-height: 84px;
+  margin: 16px 0 24px;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-height: 54px;
+  margin-bottom: 24px;
+  font-size: 15px;
+}
+
+.tags span::before {
+  content: "#";
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.actions button {
+  font-size: 16px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+footer {
+  padding: 54px 0 70px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+@media (max-width: 900px) {
+  .shell {
+    width: min(100% - 36px, 760px);
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .intro {
+    padding: 72px 0 64px;
+  }
+
+  h1 {
+    font-size: clamp(42px, 11vw, 64px);
+  }
+
+  .nav {
+    gap: 18px;
+  }
+
+  .sectionTitle {
+    align-items: flex-start;
+    gap: 20px;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 560px) {
+  body {
+    font-size: 17px;
+  }
+
+  .shell {
+    width: calc(100% - 28px);
+  }
+
+  .header {
+    align-items: flex-start;
+    gap: 24px;
+    flex-direction: column;
+  }
+
+  .nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .intro {
+    padding: 58px 0;
+  }
+
+  .sub {
+    font-size: 18px;
+  }
+}
