@@ -14,10 +14,13 @@ export default function PhotographerIndex({
   const [style, setStyle] = useState("All");
   const [savedOnly, setSavedOnly] = useState(false);
 
-  const locations = useMemo(
-    () => ["All", ...Array.from(new Set(photographers.map((p) => p.city || p.country).filter(Boolean))).sort()],
-    [photographers]
-  );
+  const locations = useMemo(() => {
+    const items = photographers
+      .map((p) => p.city || p.country)
+      .filter((item): item is string => Boolean(item));
+
+    return ["All", ...Array.from(new Set(items)).sort()];
+  }, [photographers]);
 
   const styles = useMemo(
     () => ["All", ...Array.from(new Set(photographers.flatMap((p) => p.tags))).sort()],
