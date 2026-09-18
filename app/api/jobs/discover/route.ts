@@ -1,4 +1,4 @@
-import { discoverFromAASPI } from "@/lib/discovery";
+import { runDiscovery } from "@/lib/discovery";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await discoverFromAASPI();
+    const result = await runDiscovery();
     return Response.json({ ok: true, ...result, ranAt: new Date().toISOString() });
   } catch (error) {
     return Response.json(
