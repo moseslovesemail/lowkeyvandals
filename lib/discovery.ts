@@ -250,32 +250,34 @@ function nameFromSplendid(page: cheerio.CheerioAPI, text: string) {
   return title.trim();
 }
 
-function splendidInstagram(page: cheerio.CheerioAPI, pageUrl: string) {
-  const article = page(".article-page__content");
-  let result: { handle: string; url: string } | null = null;
+function splendidInstagram(
+  page: cheerio.CheerioAPI,
+  pageUrl: string
+): { handle: string; url: string } | null {
+  const anchors = page(".article-page__content")
+    .find('a[href*="instagram.com/"]')
+    .toArray();
 
-  article.find('a[href*="instagram.com/"]').each((_, element) => {
-    if (result) return;
-
+  for (const element of anchors) {
     const href = page(element).attr("href");
-    if (!href) return;
+    if (!href) continue;
 
     try {
       const parsed = new URL(href, pageUrl);
       const parts = parsed.pathname.split("/").filter(Boolean);
       const username = parts[0];
 
-      if (!username || username.toLowerCase() === "splendid.nz") return;
-      if (!/^[A-Za-z0-9._]+$/.test(username)) return;
+      if (!username || username.toLowerCase() === "splendid.nz") continue;
+      if (!/^[A-Za-z0-9._]+$/.test(username)) continue;
 
-      result = {
+      return {
         handle: `@${username}`,
         url: `https://www.instagram.com/${username}/`,
       };
     } catch {}
-  });
+  }
 
-  return result;
+  return null;
 }
 
 export async function discoverFromSplendid() {
